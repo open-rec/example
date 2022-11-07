@@ -107,9 +107,10 @@ public class Init1 {
                 event.setTime(record.get("time"));
                 event.setLogin(Boolean.parseBoolean(record.get("is_login")));
                 event.setExtFields(record.get("ext_fields"));
-                redisTemplate.opsForValue().set(
+                redisTemplate.opsForZSet().add(
                         String.format("event:{%s}:%s:%s", event.getUserId(), event.getScene(), event.getType()),
-                        event);
+                        event.getItemId(),
+                        Double.valueOf(event.getTime()));
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -184,13 +185,13 @@ public class Init1 {
             log.error("redis init failed");
             return;
         }
-        initRedisUserData(redisTemplate);
-        initRedisItemData(redisTemplate);
+        //initRedisUserData(redisTemplate);
+        //initRedisItemData(redisTemplate);
         initRedisEventData(redisTemplate);
 
-        initRedisI2iData(redisTemplate);
-        initRedisHotData(redisTemplate);
-        initRedisNewData(redisTemplate);
+        //initRedisI2iData(redisTemplate);
+        //initRedisHotData(redisTemplate);
+        //initRedisNewData(redisTemplate);
         log.info("init redis data finished");
     }
 
