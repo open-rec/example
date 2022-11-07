@@ -3,6 +3,7 @@ package com.openrec.example.util;
 import javafx.util.Pair;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.util.HashMap;
@@ -24,6 +25,7 @@ public class RedisUtil {
             jedisConnectionFactory.setPort(port);
             RedisTemplate redisTemplate = new RedisTemplate();
             redisTemplate.setConnectionFactory(jedisConnectionFactory);
+            redisTemplate.afterPropertiesSet();
             redisTemplate.setKeySerializer(new StringRedisSerializer());
             redisMap.put(key, redisTemplate);
         }

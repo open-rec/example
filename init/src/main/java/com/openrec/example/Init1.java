@@ -18,21 +18,25 @@ import java.util.Arrays;
 @Slf4j
 public class Init1 {
 
-    private static final String TEST_DATA_DIR = "../data/test";
-    private static final String TEST_ITEM_DATA = TEST_DATA_DIR + "item.csv";
-    private static final String TEST_USER_DATA = TEST_DATA_DIR + "user.csv";
-    private static final String TEST_EVENT_DATA = TEST_DATA_DIR + "event.csv";
+    private static final String TEST_DATA_DIR = System.getProperty("user.dir") + "/data/test";
+    private static final String TEST_ITEM_DATA = TEST_DATA_DIR + "/item.csv";
+    private static final String TEST_USER_DATA = TEST_DATA_DIR + "/user.csv";
+    private static final String TEST_EVENT_DATA = TEST_DATA_DIR + "/event.csv";
 
-    private static final String TEST_RECALL_DATA_DIR = TEST_DATA_DIR + "recall";
-    private static final String TEST_RECALL_I2I_DATA = TEST_RECALL_DATA_DIR + "i2i.csv";
-    private static final String TEST_RECALL_HOT_DATA = TEST_RECALL_DATA_DIR + "hot.csv";
-    private static final String TEST_RECALL_NEW_DATA = TEST_RECALL_DATA_DIR + "new.csv";
+    private static final String TEST_RECALL_DATA_DIR = TEST_DATA_DIR + "/recall";
+    private static final String TEST_RECALL_I2I_DATA = TEST_RECALL_DATA_DIR + "/i2i.csv";
+    private static final String TEST_RECALL_HOT_DATA = TEST_RECALL_DATA_DIR + "/hot.csv";
+    private static final String TEST_RECALL_NEW_DATA = TEST_RECALL_DATA_DIR + "/new.csv";
 
 
     private static void initRedisItemData(RedisTemplate redisTemplate) {
         try {
             Reader reader = Files.newBufferedReader(Paths.get(TEST_ITEM_DATA));
-            Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
+            Iterable<CSVRecord> records = CSVFormat.DEFAULT
+                    .withFirstRecordAsHeader()
+                    .withIgnoreEmptyLines(true)
+                    .withTrim()
+                    .parse(reader);
             for (CSVRecord record : records) {
                 Item item = new Item();
                 item.setId(record.get("id"));
@@ -57,7 +61,11 @@ public class Init1 {
     private static void initRedisUserData(RedisTemplate redisTemplate) {
         try {
             Reader reader = Files.newBufferedReader(Paths.get(TEST_USER_DATA));
-            Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
+            Iterable<CSVRecord> records = CSVFormat.DEFAULT
+                    .withFirstRecordAsHeader()
+                    .withIgnoreEmptyLines(true)
+                    .withTrim()
+                    .parse(reader);
             for (CSVRecord record : records) {
                 User user = new User();
                 user.setId(record.get("id"));
@@ -83,7 +91,11 @@ public class Init1 {
     private static void initRedisEventData(RedisTemplate redisTemplate) {
         try {
             Reader reader = Files.newBufferedReader(Paths.get(TEST_EVENT_DATA));
-            Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
+            Iterable<CSVRecord> records = CSVFormat.DEFAULT
+                    .withFirstRecordAsHeader()
+                    .withIgnoreEmptyLines(true)
+                    .withTrim()
+                    .parse(reader);
             for (CSVRecord record : records) {
                 Event event = new Event();
                 event.setUserId(record.get("user_id"));
@@ -108,7 +120,11 @@ public class Init1 {
     private static void initRedisI2iData(RedisTemplate redisTemplate) {
         try {
             Reader reader = Files.newBufferedReader(Paths.get(TEST_RECALL_I2I_DATA));
-            Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
+            Iterable<CSVRecord> records = CSVFormat.DEFAULT
+                    .withFirstRecordAsHeader()
+                    .withIgnoreEmptyLines(true)
+                    .withTrim()
+                    .parse(reader);
             for (CSVRecord record : records) {
                 String scene = record.get("scene");
                 String leftItem = record.get("left_item");
@@ -125,7 +141,11 @@ public class Init1 {
     private static void initRedisHotData(RedisTemplate redisTemplate) {
         try {
             Reader reader = Files.newBufferedReader(Paths.get(TEST_RECALL_HOT_DATA));
-            Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
+            Iterable<CSVRecord> records = CSVFormat.DEFAULT
+                    .withFirstRecordAsHeader()
+                    .withIgnoreEmptyLines(true)
+                    .withTrim()
+                    .parse(reader);
             for (CSVRecord record : records) {
                 String scene = record.get("scene");
                 String item = record.get("item");
@@ -141,7 +161,11 @@ public class Init1 {
     private static void initRedisNewData(RedisTemplate redisTemplate) {
         try {
             Reader reader = Files.newBufferedReader(Paths.get(TEST_RECALL_NEW_DATA));
-            Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
+            Iterable<CSVRecord> records = CSVFormat.DEFAULT
+                    .withFirstRecordAsHeader()
+                    .withIgnoreEmptyLines(true)
+                    .withTrim()
+                    .parse(reader);
             for (CSVRecord record : records) {
                 String scene = record.get("scene");
                 String item = record.get("item");
