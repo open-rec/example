@@ -1,5 +1,10 @@
 # Log file
 *.log
 
+# Java file
+*.class
+
 # project files
 .idea
+
+
