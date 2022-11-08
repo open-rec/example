@@ -185,13 +185,13 @@ public class Init1 {
             log.error("redis init failed");
             return;
         }
-        //initRedisUserData(redisTemplate);
-        //initRedisItemData(redisTemplate);
+        initRedisUserData(redisTemplate);
+        initRedisItemData(redisTemplate);
         initRedisEventData(redisTemplate);
 
-        //initRedisI2iData(redisTemplate);
-        //initRedisHotData(redisTemplate);
-        //initRedisNewData(redisTemplate);
+        initRedisI2iData(redisTemplate);
+        initRedisHotData(redisTemplate);
+        initRedisNewData(redisTemplate);
         log.info("init redis data finished");
     }
 
