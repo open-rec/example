@@ -1,11 +1,14 @@
 package com.openrec.example;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import com.openrec.example.util.EsUtil;
 import com.openrec.example.util.RedisUtil;
 import com.openrec.proto.model.Event;
 import com.openrec.proto.model.Item;
 import com.openrec.proto.model.User;
+import javafx.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -13,9 +16,10 @@ import org.springframework.data.redis.core.RedisTemplate;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.*;
 
 @Slf4j
 public class Init1 {
@@ -181,7 +185,72 @@ public class Init1 {
         log.info("init new data finished");
     }
 
+    private static final String ITEM_VECTOR_INDEX = "{\n" +
+            "  \"mappings\": {\n" +
+            "    \"properties\": {\n" +
+            "      \"id-vector\": {\n" +
+            "        \"type\": \"dense_vector\",\n" +
+            "        \"dims\": 10,\n" +
+            "        \"index\": true,\n" +
+            "        \"similarity\": \"l2_norm\"\n" +
+            "      },\n" +
+            "      \"id\": {\n" +
+            "        \"type\": \"keyword\"\n" +
+            "      }\n" +
+            "    }\n" +
+            "  }\n" +
+            "}";
+
     private static void initEsEmbeddingData(ElasticsearchClient esClient) {
+        try {
+            Reader reader = Files.newBufferedReader(Paths.get(TEST_RECALL_I2I_DATA));
+            Iterable<CSVRecord> records = CSVFormat.DEFAULT
+                    .withFirstRecordAsHeader()
+                    .withIgnoreEmptyLines(true)
+                    .withTrim()
+                    .parse(reader);
+            Map<String, List<Pair<String, List<Double>>>> sceneItemVectorsMap = new HashMap<>();
+            for (CSVRecord record : records) {
+                String scene = record.get("scene");
+                String itemId = record.get("item");
+                List<Double> vector = null;//record.get("vector");
+                if (!sceneItemVectorsMap.containsKey(scene)) {
+                    sceneItemVectorsMap.put(scene, new LinkedList<>());
+                }
+                sceneItemVectorsMap.get(scene).add(new Pair<>(itemId, vector));
+            }
+
+            for (Map.Entry<String, List<Pair<String, List<Double>>>> entry : sceneItemVectorsMap.entrySet()) {
+                String scene = entry.getKey();
+                String indexName = String.format("%s-item-vecotr-index", scene);
+                CreateIndexRequest request = CreateIndexRequest
+                        .of(i -> i.index(indexName).withJson(new StringReader(ITEM_VECTOR_INDEX)));
+                esClient.indices().create(request).acknowledged();
+
+                List<Pair<String, List<Double>>> itemVectors = entry.getValue();
+                int total = itemVectors.size();
+                int batch = 10;
+                int count = 0;
+                BulkRequest.Builder bulkReqBuilder = new BulkRequest.Builder();
+                for (int i = 0; i < total; i++) {
+                    int finalI = i;
+                    count++;
+                    bulkReqBuilder.operations(op -> op.index(o -> o.index(indexName)
+                            .id(String.valueOf(itemVectors.get(finalI).getKey()))
+                            .document(itemVectors.get(finalI).getValue())));
+                    if (count == batch) {
+                        esClient.bulk(bulkReqBuilder.build());
+                        count = 0;
+                    }
+                }
+                if (count > 0) {
+                    esClient.bulk(bulkReqBuilder.build());
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        log.info("init embedding data finished");
     }
 
     public static void initRedisData(String host, int port) {
@@ -202,7 +271,7 @@ public class Init1 {
 
     public static void initEsData(String host, int port, String user, String password) {
         ElasticsearchClient esClient = EsUtil.getEs(host, port, user, password);
-        if(esClient==null) {
+        if (esClient == null) {
             log.error("es init failed");
             return;
         }
@@ -224,6 +293,6 @@ public class Init1 {
         int esPort = Integer.valueOf(args[3]);
         String esUser = args[4];
         String esPassword = args[5];
-        initEsData(esHost,esPort,esUser,esPassword);
+        initEsData(esHost, esPort, esUser, esPassword);
     }
 }
