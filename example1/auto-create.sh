@@ -4,7 +4,8 @@
 brew install redis
 brew services start redis
 
-# install elasticsearch
+# install elasticsearch on mac
+# other OS package: https://www.elastic.co/cn/downloads/past-releases/elasticsearch-8-5-0
 # for version 8.5.0, elasticsearch access with security limit, create common test user later.
 curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.5.0-darwin-x86_64.tar.gz
 tar -xzf elasticsearch-8.5.0-darwin-x86_64.tar.gz
