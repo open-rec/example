@@ -1,5 +1,7 @@
 package com.openrec.example;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.openrec.example.util.EsUtil;
 import com.openrec.example.util.RedisUtil;
 import com.openrec.proto.model.Event;
 import com.openrec.proto.model.Item;
@@ -179,7 +181,7 @@ public class Init1 {
         log.info("init new data finished");
     }
 
-    private static void initEsEmbeddingData(RedisTemplate redisTemplate) {
+    private static void initEsEmbeddingData(ElasticsearchClient esClient) {
     }
 
     public static void initRedisData(String host, int port) {
@@ -198,14 +200,30 @@ public class Init1 {
         log.info("init redis data finished");
     }
 
+    public static void initEsData(String host, int port, String user, String password) {
+        ElasticsearchClient esClient = EsUtil.getEs(host, port, user, password);
+        if(esClient==null) {
+            log.error("es init failed");
+            return;
+        }
+        initEsEmbeddingData(esClient);
+        log.info("init es data finished");
+    }
+
 
     public static void main(String[] args) {
-        if (args.length != 2) {
+        if (args.length != 6) {
             log.error("invalid params, please input redis host and port");
             return;
         }
         String redisHost = args[0];
         int redisPort = Integer.valueOf(args[1]);
         initRedisData(redisHost, redisPort);
+
+        String esHost = args[2];
+        int esPort = Integer.valueOf(args[3]);
+        String esUser = args[4];
+        String esPassword = args[5];
+        initEsData(esHost,esPort,esUser,esPassword);
     }
 }
