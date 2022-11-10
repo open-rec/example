@@ -3,6 +3,7 @@ package com.openrec.example;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
+import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.ExistsRequest;
 import co.elastic.clients.transport.endpoints.BooleanResponse;
 import com.openrec.example.util.EsUtil;
@@ -11,6 +12,7 @@ import com.openrec.example.util.RedisUtil;
 import com.openrec.proto.model.Event;
 import com.openrec.proto.model.Item;
 import com.openrec.proto.model.User;
+import com.openrec.proto.model.VectorResult;
 import javafx.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -192,7 +194,7 @@ public class Init1 {
     private static final String ITEM_VECTOR_INDEX = "{\n" +
             "  \"mappings\": {\n" +
             "    \"properties\": {\n" +
-            "      \"id-vector\": {\n" +
+            "      \"vector\": {\n" +
             "        \"type\": \"dense_vector\",\n" +
             "        \"dims\": 10,\n" +
             "        \"index\": true,\n" +
@@ -226,18 +228,20 @@ public class Init1 {
 
             for (Map.Entry<String, List<Pair<String, List<Double>>>> entry : sceneItemVectorsMap.entrySet()) {
                 String scene = entry.getKey();
-                String indexName = String.format("%s-item-vecotr-index", scene);
+                String indexName = String.format("%s-item-vector-index", scene);
 
-                ExistsRequest existsRequest = ExistsRequest.of(i->i.index(indexName));
+                ExistsRequest existsRequest = ExistsRequest.of(i -> i.index(indexName));
                 BooleanResponse response = esClient.indices().exists(existsRequest);
-                if(!response.value()) {
-                    CreateIndexRequest indexRequest = CreateIndexRequest
-                            .of(i -> i.index(indexName).withJson(new StringReader(ITEM_VECTOR_INDEX)));
-                    boolean created = esClient.indices().create(indexRequest).acknowledged();
-                    if(!created) {
-                        log.error("{} create failed", indexName);
-                        return;
-                    }
+                if (response.value()) {
+                    DeleteIndexRequest deleteRequest = DeleteIndexRequest.of(i -> i.index(indexName));
+                    esClient.indices().delete(deleteRequest);
+                }
+                CreateIndexRequest indexRequest = CreateIndexRequest
+                        .of(i -> i.index(indexName).withJson(new StringReader(ITEM_VECTOR_INDEX)));
+                boolean created = esClient.indices().create(indexRequest).acknowledged();
+                if (!created) {
+                    log.error("{} create failed", indexName);
+                    return;
                 }
 
                 List<Pair<String, List<Double>>> itemVectors = entry.getValue();
@@ -249,8 +253,10 @@ public class Init1 {
                     int finalI = i;
                     count++;
                     bulkReqBuilder.operations(op -> op.index(o -> o.index(indexName)
-                            .id(String.valueOf(itemVectors.get(finalI).getKey()))
-                            .document(itemVectors.get(finalI).getValue())));
+                            .id(String.valueOf(finalI))
+                            .document(new VectorResult(
+                                    String.valueOf(itemVectors.get(finalI).getKey()),
+                                    itemVectors.get(finalI).getValue()))));
                     if (count == batch) {
                         esClient.bulk(bulkReqBuilder.build());
                         bulkReqBuilder = new BulkRequest.Builder();
