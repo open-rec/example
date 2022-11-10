@@ -3,7 +3,10 @@ package com.openrec.example;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
+import co.elastic.clients.elasticsearch.indices.ExistsRequest;
+import co.elastic.clients.transport.endpoints.BooleanResponse;
 import com.openrec.example.util.EsUtil;
+import com.openrec.example.util.JsonUtil;
 import com.openrec.example.util.RedisUtil;
 import com.openrec.proto.model.Event;
 import com.openrec.proto.model.Item;
@@ -31,6 +34,7 @@ public class Init1 {
 
     private static final String TEST_RECALL_DATA_DIR = TEST_DATA_DIR + "/recall";
     private static final String TEST_RECALL_I2I_DATA = TEST_RECALL_DATA_DIR + "/i2i.csv";
+    private static final String TEST_RECALL_EMBEDDING_DATA = TEST_RECALL_DATA_DIR + "/embedding.csv";
     private static final String TEST_RECALL_HOT_DATA = TEST_RECALL_DATA_DIR + "/hot.csv";
     private static final String TEST_RECALL_NEW_DATA = TEST_RECALL_DATA_DIR + "/new.csv";
 
@@ -203,7 +207,7 @@ public class Init1 {
 
     private static void initEsEmbeddingData(ElasticsearchClient esClient) {
         try {
-            Reader reader = Files.newBufferedReader(Paths.get(TEST_RECALL_I2I_DATA));
+            Reader reader = Files.newBufferedReader(Paths.get(TEST_RECALL_EMBEDDING_DATA));
             Iterable<CSVRecord> records = CSVFormat.DEFAULT
                     .withFirstRecordAsHeader()
                     .withIgnoreEmptyLines(true)
@@ -213,7 +217,7 @@ public class Init1 {
             for (CSVRecord record : records) {
                 String scene = record.get("scene");
                 String itemId = record.get("item");
-                List<Double> vector = null;//record.get("vector");
+                List<Double> vector = JsonUtil.jsonToObj(record.get("vector"), List.class);
                 if (!sceneItemVectorsMap.containsKey(scene)) {
                     sceneItemVectorsMap.put(scene, new LinkedList<>());
                 }
@@ -223,9 +227,18 @@ public class Init1 {
             for (Map.Entry<String, List<Pair<String, List<Double>>>> entry : sceneItemVectorsMap.entrySet()) {
                 String scene = entry.getKey();
                 String indexName = String.format("%s-item-vecotr-index", scene);
-                CreateIndexRequest request = CreateIndexRequest
-                        .of(i -> i.index(indexName).withJson(new StringReader(ITEM_VECTOR_INDEX)));
-                esClient.indices().create(request).acknowledged();
+
+                ExistsRequest existsRequest = ExistsRequest.of(i->i.index(indexName));
+                BooleanResponse response = esClient.indices().exists(existsRequest);
+                if(!response.value()) {
+                    CreateIndexRequest indexRequest = CreateIndexRequest
+                            .of(i -> i.index(indexName).withJson(new StringReader(ITEM_VECTOR_INDEX)));
+                    boolean created = esClient.indices().create(indexRequest).acknowledged();
+                    if(!created) {
+                        log.error("{} create failed", indexName);
+                        return;
+                    }
+                }
 
                 List<Pair<String, List<Double>>> itemVectors = entry.getValue();
                 int total = itemVectors.size();
@@ -240,6 +253,7 @@ public class Init1 {
                             .document(itemVectors.get(finalI).getValue())));
                     if (count == batch) {
                         esClient.bulk(bulkReqBuilder.build());
+                        bulkReqBuilder = new BulkRequest.Builder();
                         count = 0;
                     }
                 }
@@ -282,7 +296,7 @@ public class Init1 {
 
     public static void main(String[] args) {
         if (args.length != 6) {
-            log.error("invalid params, please input redis host and port");
+            log.error("invalid params, please input redis host and port & es host, port ,user and password");
             return;
         }
         String redisHost = args[0];
@@ -294,5 +308,7 @@ public class Init1 {
         String esUser = args[4];
         String esPassword = args[5];
         initEsData(esHost, esPort, esUser, esPassword);
+
+        System.exit(0);
     }
 }
