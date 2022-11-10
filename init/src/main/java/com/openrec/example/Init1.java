@@ -179,6 +179,9 @@ public class Init1 {
         log.info("init new data finished");
     }
 
+    private static void initEsEmbeddingData(RedisTemplate redisTemplate) {
+    }
+
     public static void initRedisData(String host, int port) {
         RedisTemplate redisTemplate = RedisUtil.getRedis(host, port);
         if (redisTemplate == null) {
