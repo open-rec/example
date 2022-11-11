@@ -1,3 +1,3 @@
 # example1
 
-rec-server & redis
+rec-server & redis & elasticsearch

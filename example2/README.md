@@ -1,3 +1,3 @@
-# example3
+# example2
 
-rec-server & kafka & flink & redis & elastic-search & spark
+rec-server & kafka & flink & redis & elasticsearch & spark
