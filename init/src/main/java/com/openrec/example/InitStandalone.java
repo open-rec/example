@@ -27,7 +27,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 @Slf4j
-public class Init1 {
+public class InitStandalone {
 
     private static final String TEST_DATA_DIR = System.getProperty("user.dir") + "/data/test";
     private static final String TEST_ITEM_DATA = TEST_DATA_DIR + "/item.csv";
