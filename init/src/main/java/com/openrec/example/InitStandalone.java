@@ -29,7 +29,7 @@ import java.util.*;
 @Slf4j
 public class InitStandalone {
 
-    private static final String TEST_DATA_DIR = System.getProperty("user.dir") + "/data/test";
+    private static final String TEST_DATA_DIR = System.getProperty("user.dir") + "/data/douban";
     private static final String TEST_ITEM_DATA = TEST_DATA_DIR + "/item.csv";
     private static final String TEST_USER_DATA = TEST_DATA_DIR + "/user.csv";
     private static final String TEST_EVENT_DATA = TEST_DATA_DIR + "/event.csv";
@@ -60,7 +60,7 @@ public class InitStandalone {
                 item.setModifyTime(record.get("modify_time"));
                 item.setExpireTime(record.get("expire_time"));
                 item.setStatus(Integer.parseInt(record.get("status")));
-                item.setWeight(Integer.parseInt(record.get("weight")));
+                item.setWeight(Double.valueOf(record.get("weight")).intValue());
                 item.setExtFields(record.get("ext_fields"));
                 redisTemplate.opsForValue().set(String.format("item:{%s}", item.getId()), item);
             }
