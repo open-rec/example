@@ -197,7 +197,7 @@ for `cold start`
 ```
 
 for `personalized`  
-base trigger: `[葬礼之后](https://movie.douban.com/subject/1768214/)`
+base trigger: [葬礼之后](https://movie.douban.com/subject/1768214/)
 ```json
 {
   "code": 200,
