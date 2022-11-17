@@ -39,7 +39,21 @@ public class InitStandalone {
     private static final String TEST_RECALL_EMBEDDING_DATA = TEST_RECALL_DATA_DIR + "/embedding.csv";
     private static final String TEST_RECALL_HOT_DATA = TEST_RECALL_DATA_DIR + "/hot.csv";
     private static final String TEST_RECALL_NEW_DATA = TEST_RECALL_DATA_DIR + "/new.csv";
-
+    private static final String ITEM_VECTOR_INDEX = "{\n" +
+            "  \"mappings\": {\n" +
+            "    \"properties\": {\n" +
+            "      \"vector\": {\n" +
+            "        \"type\": \"dense_vector\",\n" +
+            "        \"dims\": 10,\n" +
+            "        \"index\": true,\n" +
+            "        \"similarity\": \"l2_norm\"\n" +
+            "      },\n" +
+            "      \"id\": {\n" +
+            "        \"type\": \"keyword\"\n" +
+            "      }\n" +
+            "    }\n" +
+            "  }\n" +
+            "}";
 
     private static void initRedisItemData(RedisTemplate redisTemplate) {
         try {
@@ -190,22 +204,6 @@ public class InitStandalone {
         }
         log.info("init new data finished");
     }
-
-    private static final String ITEM_VECTOR_INDEX = "{\n" +
-            "  \"mappings\": {\n" +
-            "    \"properties\": {\n" +
-            "      \"vector\": {\n" +
-            "        \"type\": \"dense_vector\",\n" +
-            "        \"dims\": 10,\n" +
-            "        \"index\": true,\n" +
-            "        \"similarity\": \"l2_norm\"\n" +
-            "      },\n" +
-            "      \"id\": {\n" +
-            "        \"type\": \"keyword\"\n" +
-            "      }\n" +
-            "    }\n" +
-            "  }\n" +
-            "}";
 
     private static void initEsEmbeddingData(ElasticsearchClient esClient) {
         try {
