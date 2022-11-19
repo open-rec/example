@@ -8,10 +8,21 @@ make `open-rec` easy to use.
 
 more details: [example standalone](https://github.com/open-rec/example/tree/master/example_standalone)
 
-### showcase
-use douban opensource data.
+## cluster
+### architecture
+![cluster](example_cluster/doc/architecture.jpg "cluster")
 
-for `cold start`
+more details: [example cluster](https://github.com/open-rec/example/tree/master/example_cluster)
+
+
+
+## showcase
+use `douban` opensource data.  
+user: 64w+  
+item: 14w+  
+event: 200w+
+
+### cold start
 ```json
 {
   "code": 200,
@@ -196,7 +207,7 @@ for `cold start`
 }
 ```
 
-for `personalized`  
+### personalized 
 base trigger: [葬礼之后](https://movie.douban.com/subject/1768214/)
 ```json
 {
@@ -381,10 +392,3 @@ base trigger: [葬礼之后](https://movie.douban.com/subject/1768214/)
   }
 }
 ```
-
-## cluster
-### architecture
-![cluster](example_cluster/doc/architecture.jpg "cluster")
-
-more details: [example cluster](https://github.com/open-rec/example/tree/master/example_cluster)
-
