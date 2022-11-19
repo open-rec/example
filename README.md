@@ -4,7 +4,7 @@ make `open-rec` easy to use.
 
 ## standalone
 ### architecture
-![standalone](example_standalone/doc/architecture.png "standalone")
+![standalone](example_standalone/doc/architecture.jpg "standalone")
 
 more details: [example standalone](https://github.com/open-rec/example/tree/master/example_standalone)
 
