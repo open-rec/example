@@ -1,6 +1,11 @@
 # example standalone
 
-rec-server & redis & elasticsearch & rec-algorithm
+## dependency
+### open-rec
+rec-server & rec-algorithm
+
+### system env
+redis & elasticsearch
 
 ## steps
 

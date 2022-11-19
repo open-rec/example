@@ -1,6 +1,11 @@
 # example cluster
 
-rec-server & kafka & flink & redis & elasticsearch & spark & & rec-algorithm
+## dependency
+### open-rec
+rec-server & data-processor & rec-algorithm
+
+### system env
+kafka & flink & redis & elasticsearch & hadoop & spark & hive
 
 ## steps
 todo
