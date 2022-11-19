@@ -385,5 +385,6 @@ base trigger: [葬礼之后](https://movie.douban.com/subject/1768214/)
 ## cluster
 ### architecture
 ![cluster](example_cluster/doc/architecture.jpg "cluster")
+
 more details: [example cluster](https://github.com/open-rec/example/tree/master/example_cluster)
 
