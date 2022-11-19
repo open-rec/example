@@ -4,13 +4,13 @@ make `open-rec` easy to use.
 
 ## standalone
 ### architecture
-![standalone](example_standalone/doc/architecture.jpg "standalone")
+![standalone](example_standalone/doc/openrec_standalone.jpg "standalone")
 
 more details: [example standalone](https://github.com/open-rec/example/tree/master/example_standalone)
 
 ## cluster
 ### architecture
-![cluster](example_cluster/doc/architecture.jpg "cluster")
+![cluster](example_cluster/doc/openrec_cluster.jpg "cluster")
 
 more details: [example cluster](https://github.com/open-rec/example/tree/master/example_cluster)
 
