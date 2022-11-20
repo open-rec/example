@@ -4,7 +4,7 @@ make `open-rec` easy to use.
 
 ## standalone
 ### architecture
-![standalone](example_standalone/doc/openrec_standalone.jpg "standalone")
+![standalone](https://raw.githubusercontent.com/open-rec/example/master/example_standalone/doc/openrec_standalone.jpg)
 
 more details: [example standalone](https://github.com/open-rec/example/tree/master/example_standalone)
 
@@ -12,7 +12,7 @@ more details: [example standalone](https://github.com/open-rec/example/tree/mast
 ### architecture
 ![cluster](example_cluster/doc/openrec_cluster.jpg "cluster")
 
-more details: [example cluster](https://github.com/open-rec/example/tree/master/example_cluster)
+more details: [example cluster](https://raw.githubusercontent.com/open-rec/example/master/example_cluster/doc/openrec_cluster.jpg)
 
 
 
