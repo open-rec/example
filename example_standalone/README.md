@@ -16,7 +16,6 @@ brew install redis
 brew services start redis
 ```
 
-
 ### install elasticsearch
 ```shell
 curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.5.0-darwin-x86_64.tar.gz
