@@ -300,19 +300,29 @@ public class InitStandalone {
 
     public static void main(String[] args) {
         if (args.length != 6) {
-            log.error("invalid params, please input redis host and port & es host, port ,user and password");
+            log.error("Usage: java InitStandalone <redis_host> <redis_port>  <es_host> <es_port> <es_user> <es_password>");
             return;
         }
-        String redisHost = args[0];
-        int redisPort = Integer.valueOf(args[1]);
-        initRedisData(redisHost, redisPort);
 
-        String esHost = args[2];
-        int esPort = Integer.valueOf(args[3]);
-        String esUser = args[4];
-        String esPassword = args[5];
-        initEsData(esHost, esPort, esUser, esPassword);
+        try {
+            String redisHost = args[0];
+            int redisPort = Integer.valueOf(args[1]);
+            initRedisData(redisHost, redisPort);
+        } catch (Exception e) {
+            log.error("init redis data failed! exception:{}", e.getMessage());
+            e.printStackTrace();
+        }
 
+        try {
+            String esHost = args[2];
+            int esPort = Integer.valueOf(args[3]);
+            String esUser = args[4];
+            String esPassword = args[5];
+            initEsData(esHost, esPort, esUser, esPassword);
+        } catch (Exception e) {
+            log.error("init es data failed! exception:{}", e.getMessage());
+            e.printStackTrace();
+        }
         System.exit(0);
     }
 }
