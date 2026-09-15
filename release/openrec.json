@@ -16,7 +16,7 @@
     },
     "rank-engine": {
       "repository": "https://github.com/open-rec/rank-engine.git",
-      "ref": "main",
+      "ref": "054666fa325f40e12839654fd85eca095b4c4111",
       "required_for": ["cluster"]
     },
     "rec-algorithm": {

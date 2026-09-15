@@ -1,7 +1,7 @@
 """Validate the initialized OpenRec cluster recommendation path.
 
-Container and long-running process lifecycle deliberately stays in start.sh. Tasks here only use
-the services' network protocols, so the Airflow scheduler needs no Docker socket.
+Container and long-running process lifecycle stays in start.sh. Tasks use
+network protocols, so the Airflow scheduler needs no Docker socket.
 """
 
 import json
@@ -17,14 +17,22 @@ from airflow.sdk import dag, task, task_group
 
 REC_SERVER = "rec-server"
 REQUIRED_RECALL_CHANNELS = {
-    "item_cf_i2i", "content_i2i", "user_cf_u2i", "item_seq_emb", "hot",
+    "item_cf_i2i",
+    "content_i2i",
+    "user_cf_u2i",
+    "item_seq_emb",
+    "hot",
 }
 
 
 def _request(url, method="GET", body=None, headers=None, context=None):
     data = json.dumps(body).encode() if body is not None else None
-    request = urllib.request.Request(url, data=data, method=method, headers=headers or {})
-    with urllib.request.urlopen(request, timeout=15, context=context) as response:
+    request = urllib.request.Request(
+        url, data=data, method=method, headers=headers or {}
+    )
+    with urllib.request.urlopen(
+        request, timeout=15, context=context
+    ) as response:
         payload = response.read().decode()
         return json.loads(payload) if payload else {}
 
@@ -32,7 +40,9 @@ def _request(url, method="GET", body=None, headers=None, context=None):
 def _redis_command(*parts):
     encoded = [str(part).encode() for part in parts]
     request = b"*%d\r\n" % len(encoded)
-    request += b"".join(b"$%d\r\n%s\r\n" % (len(part), part) for part in encoded)
+    request += b"".join(
+        b"$%d\r\n%s\r\n" % (len(part), part) for part in encoded
+    )
     with socket.create_connection(("redis", 6379), timeout=10) as connection:
         connection.sendall(request)
         response = connection.recv(4096)
@@ -46,10 +56,17 @@ def _recommendation_request(request_id):
         "http://%s:13579/api/recommend" % REC_SERVER,
         method="POST",
         headers={"Content-Type": "application/json"},
-        body={"requestId": request_id, "body": {
-            "scene": "scene_0", "size": 12, "userId": "user_0",
-            "deviceId": "airflow-cluster-smoke", "type": "click", "debug": False,
-        }},
+        body={
+            "requestId": request_id,
+            "body": {
+                "scene": "scene_0",
+                "size": 12,
+                "userId": "user_0",
+                "deviceId": "airflow-cluster-smoke",
+                "type": "click",
+                "debug": False,
+            },
+        },
     )
 
 
@@ -57,17 +74,28 @@ def _recall_counts():
     context = ssl.create_default_context()
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
-    token = __import__("base64").b64encode(b"elastic:openrec-es-password").decode()
+    token = (
+        __import__("base64").b64encode(b"elastic:openrec-es-password").decode()
+    )
     counts = {}
-    for name in ("openrec-recall-hot-active", "openrec-recall-new-active",
-                 "openrec-recall-item-cf-i2i-active", "openrec-recall-content-i2i-active",
-                 "openrec-recall-user-cf-u2i-active", "scene_0-item-vector-index"):
+    for name in (
+        "openrec-recall-hot-active",
+        "openrec-recall-new-active",
+        "openrec-recall-item-cf-i2i-active",
+        "openrec-recall-content-i2i-active",
+        "openrec-recall-user-cf-u2i-active",
+        "scene_0-item-vector-index",
+    ):
         try:
             response = _request(
                 "https://elasticsearch:9200/%s/_count" % name,
-                headers={"Authorization": "Basic " + token}, context=context)
+                headers={"Authorization": "Basic " + token},
+                context=context,
+            )
             counts[name] = response.get("count")
-        except Exception as error:  # diagnostics must not hide the recommendation failure
+        except (
+            Exception
+        ) as error:  # diagnostics must not hide the recommendation failure
             counts[name] = "error: %s" % error
     return counts
 
@@ -78,7 +106,10 @@ def _recall_counts():
     start_date=datetime(2026, 1, 1, tzinfo=timezone.utc),
     catchup=False,
     tags=["openrec", "cluster", "bootstrap"],
-    description="Verify platform, serving stores, online services, and the recommendation path",
+    description=(
+        "Verify platform, serving stores, online services, "
+        "and the recommendation path"
+    ),
 )
 def openrec_cluster_bootstrap():
     @task(retries=5, retry_delay=timedelta(seconds=10))
@@ -89,7 +120,11 @@ def openrec_cluster_bootstrap():
     @task(retries=5, retry_delay=timedelta(seconds=10))
     def spark_ready():
         status = _request("http://spark-master:8080/json/")
-        alive = [worker for worker in status.get("workers", []) if worker.get("state") == "ALIVE"]
+        alive = [
+            worker
+            for worker in status.get("workers", [])
+            if worker.get("state") == "ALIVE"
+        ]
         if not alive:
             raise RuntimeError("Spark has no ALIVE workers")
         return {"alive_workers": len(alive)}
@@ -104,7 +139,11 @@ def openrec_cluster_bootstrap():
         context = ssl.create_default_context()
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE
-        token = __import__("base64").b64encode(b"elastic:openrec-es-password").decode()
+        token = (
+            __import__("base64")
+            .b64encode(b"elastic:openrec-es-password")
+            .decode()
+        )
         status = _request(
             "https://elasticsearch:9200/_cluster/health?wait_for_status=yellow&timeout=10s",
             headers={"Authorization": "Basic " + token},
@@ -117,11 +156,14 @@ def openrec_cluster_bootstrap():
     def rank_engine_ready():
         response = _request("http://rank-engine:8123/health")
         data = response.get("data") or {}
-        # /health deliberately returns HTTP 200 while the process is alive even when automatic
-        # model loading failed or Redis is not ready. Recommendation then silently bypasses the
-        # rank stage, so HTTP readiness alone is insufficient for the cluster acceptance path.
+        # Current rank-engine returns HTTP 503 while unready. Check the body as
+        # well for
+        # compatibility with older deployments that reported readiness only in
+        # the payload.
         if response.get("status") != "success" or not data.get("ready"):
-            raise RuntimeError("rank-engine is alive but not ready: %s" % response)
+            raise RuntimeError(
+                "rank-engine is alive but not ready: %s" % response
+            )
 
     @task(retries=10, retry_delay=timedelta(seconds=10))
     def rec_server_ready():
@@ -137,15 +179,19 @@ def openrec_cluster_bootstrap():
 
     @task
     def recommendation_warmup():
-        # Warm rec-server's Elasticsearch TLS connection and client pools outside the latency
-        # assertion. Empty cold-start responses are acceptable here; the next task validates the
+        # Warm rec-server's Elasticsearch TLS connection and client pools
+        # outside the latency
+        # assertion. Empty cold-start responses are acceptable here; the next
+        # task validates the
         # recommendation path with the normal online node deadlines unchanged.
         exposure_key = "event:{user_0}:scene_0:expose"
         for attempt in range(5):
             _redis_command("DEL", exposure_key)
             try:
                 response = _recommendation_request(
-                    "airflow-cluster-warmup-%d-%s" % (attempt, uuid.uuid4().hex))
+                    "airflow-cluster-warmup-%d-%s"
+                    % (attempt, uuid.uuid4().hex)
+                )
             finally:
                 _redis_command("DEL", exposure_key)
             if (response.get("data") or response).get("results"):
@@ -154,77 +200,118 @@ def openrec_cluster_bootstrap():
 
     @task(retries=6, retry_delay=timedelta(seconds=10))
     def recommendation_smoke():
-        # Redis persists across cluster restarts. Previous smoke requests write exposure events for
-        # user_0, which can eventually filter every sample candidate and make a healthy chain look
-        # empty. Clear only this smoke user's exposure state before and after the request.
+        # Redis persists across cluster restarts. Previous smoke requests write
+        # exposure events for
+        # user_0, which can eventually filter every sample candidate and make a
+        # healthy chain look
+        # empty. Clear only this smoke user's exposure state before and after
+        # the request.
         exposure_key = "event:{user_0}:scene_0:expose"
         _redis_command("DEL", exposure_key)
         try:
             response = _recommendation_request(
-                "airflow-cluster-smoke-%s" % uuid.uuid4().hex)
+                "airflow-cluster-smoke-%s" % uuid.uuid4().hex
+            )
         finally:
             _redis_command("DEL", exposure_key)
         if response.get("code") != 200 or response.get("status") is not True:
             raise RuntimeError("recommendation failed: %s" % response)
-        # JsonRes wraps the business payload in `data`; retain top-level compatibility for older
+        # JsonRes wraps the business payload in `data`; retain top-level
+        # compatibility for older
         # rec-server responses used by some local deployments.
         data = response.get("data") or response
         if not data.get("results"):
-            raise RuntimeError("recommendation returned no candidates: %s; recall counts: %s"
-                               % (response, _recall_counts()))
-        channels = {result.get("recallFrom") for result in data["results"]
-                    if result.get("recallFrom")}
+            raise RuntimeError(
+                "recommendation returned no candidates: %s; recall counts: %s"
+                % (response, _recall_counts())
+            )
+        channels = {
+            result.get("recallFrom")
+            for result in data["results"]
+            if result.get("recallFrom")
+        }
         for result in data["results"]:
             channels.update((result.get("recallScores") or {}).keys())
         missing = REQUIRED_RECALL_CHANNELS - channels
         if missing:
-            raise RuntimeError("recommendation misses enabled channels %s: %s; recall counts: %s"
-                               % (sorted(missing), response, _recall_counts()))
-        unranked = [result.get("id") for result in data["results"]
-                    if result.get("rankScore") is None]
+            raise RuntimeError(
+                "recommendation misses enabled channels %s: %s; "
+                "recall counts: %s"
+                % (sorted(missing), response, _recall_counts())
+            )
+        unranked = [
+            result.get("id")
+            for result in data["results"]
+            if result.get("rankScore") is None
+        ]
         if unranked:
-            raise RuntimeError("recommendation silently skipped ranking for items %s: %s"
-                               % (unranked, response))
+            raise RuntimeError(
+                "recommendation silently skipped ranking for items %s: %s"
+                % (unranked, response)
+            )
 
     @task
     def ingestion_smoke():
-        # A unique key proves this DAG run traversed rec-server -> Kafka -> data-processor -> Redis;
+        # A unique key proves this DAG run traversed rec-server -> Kafka ->
+        # data-processor -> Redis;
         # a fixed key could pass because a previous run had already written it.
         user_id = "airflow_cluster_smoke_user_%s" % uuid.uuid4().hex
         response = _request(
             "http://%s:13579/api/push/user" % REC_SERVER,
             method="POST",
             headers={"Content-Type": "application/json"},
-            body={"requestId": "airflow-cluster-push-smoke", "body": {
-                "cmd": "INSERT", "data": [{"id": user_id, "deviceId": "airflow-cluster-smoke",
-                "name": "Airflow Cluster Smoke", "age": 0, "tags": []}],
-            }},
+            body={
+                "requestId": "airflow-cluster-push-smoke",
+                "body": {
+                    "cmd": "INSERT",
+                    "data": [
+                        {
+                            "id": user_id,
+                            "deviceId": "airflow-cluster-smoke",
+                            "name": "Airflow Cluster Smoke",
+                            "age": 0,
+                            "tags": [],
+                        }
+                    ],
+                },
+            },
         )
         if response.get("code") != 200 or response.get("status") is not True:
             raise RuntimeError("Kafka push failed: %s" % response)
         for _ in range(60):
-            if _redis_command("EXISTS", "user:{%s}" % user_id).startswith(b":1"):
+            if _redis_command("EXISTS", "user:{%s}" % user_id).startswith(
+                b":1"
+            ):
                 return
             time.sleep(1)
-        raise RuntimeError("Kafka message did not reach Redis through data-processor")
+        raise RuntimeError(
+            "Kafka message did not reach Redis through data-processor"
+        )
 
     @task_group(group_id="platform_preflight")
     def platform_preflight():
         checks = [
             tcp_ready.override(task_id="kafka")("Kafka", "kafka-1", 9092),
-            tcp_ready.override(task_id="hive")("HiveServer2", "hiveserver2", 10000),
+            tcp_ready.override(task_id="hive")(
+                "HiveServer2", "hiveserver2", 10000
+            ),
             tcp_ready.override(task_id="hdfs")("HDFS", "namenode", 8020),
             spark_ready(),
             redis_ready(),
             elasticsearch_ready(),
         ]
-        # Keep references local so TaskFlow registers every check in this group.
+        # Keep references local so TaskFlow registers every check in this
+        # group.
         assert checks
 
     @task_group(group_id="online_services")
     def online_services():
-        checks = [rank_engine_ready(), rec_server_ready(), rec_algorithm_runner_ready(),
-                  rec_console_ready()]
+        checks = [
+            rank_engine_ready(),
+            rec_server_ready(),
+            rec_algorithm_runner_ready(),
+            rec_console_ready(),
+        ]
         assert checks
 
     platform = platform_preflight()

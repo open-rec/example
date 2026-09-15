@@ -134,6 +134,24 @@ health="$(curl --noproxy '*' -fsS http://127.0.0.1:8123/health)"
 python3 -c 'import json,sys; x=json.load(sys.stdin); d=x.get("data",{}); assert d.get("ready") and sys.argv[1] in d.get("model",{}).get("path",""),x' \
   "${VERSION_ONE}" <<<"${health}" || die "rank-engine did not serve the rolled-back model"
 
+note "Restarting rank-engine and verifying the rolled-back release is restored"
+docker restart rank-engine >/dev/null
+restored=false
+for attempt in {1..60}; do
+  if health="$(curl --noproxy '*' -fsS http://127.0.0.1:8123/health 2>/dev/null)"; then
+    if python3 -c 'import json,sys; d=json.load(sys.stdin)["data"]; assert d["ready"] and sys.argv[1] in d["model"]["path"]' \
+      "${VERSION_ONE}" <<<"${health}"; then
+      restored=true
+      break
+    fi
+  fi
+  sleep 2
+done
+[[ "${restored}" == true ]] || die "rank-engine did not restore the rolled-back model after restart"
+listing="$(curl --noproxy '*' -fsS http://127.0.0.1:8095/api/models/releases/scene_0)"
+python3 -c 'import json,sys; assert json.load(sys.stdin)["active_version"] == sys.argv[1]' \
+  "${VERSION_ONE}" <<<"${listing}" || die "console and restored runtime versions disagree"
+
 cat <<EOF
 
 Rank model lifecycle acceptance passed.
@@ -141,5 +159,5 @@ First version:  ${VERSION_ONE}
 Second version: ${VERSION_TWO}
 Active after rollback: ${VERSION_ONE}
 Airflow runs: ${RUN_ONE}, ${RUN_TWO}
-Verified: Push -> Kafka -> data-processor -> Hive -> LR/FM feature sets -> train -> console publish -> rank-engine -> rec-server score -> rollback
+Verified: Push -> Kafka -> data-processor -> Hive -> LR/FM feature sets -> train -> console publish -> rank-engine -> rec-server score -> rollback -> restart recovery
 EOF
